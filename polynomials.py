@@ -4,6 +4,10 @@ from sympy.abc import x,a,n,k
 import json
 import matplotlib.pyplot as plt
 import pprint
+import time
+from functools import wraps
+from time import process_time
+import json
 
 
 def is_integer_and_natural(num):
@@ -54,6 +58,17 @@ def DivideByGegenbauer(f_x, n_):
 	return (quotient, remainder)
 
 
+def GenerateGegenbauerLinear(polynomials_arr ,n, i ,t):
+	j = i-1
+	if i == 0:
+		polynomials_arr.append(1)
+	elif i == 1:
+		polynomials_arr.append(t)
+	else:
+		polynomials_arr.append(sympy.poly((2*j + n - 2)*t*polynomials_arr[j] - i* polynomials_arr[j-1]/(j + n - 2), x))
+	return polynomials_arr
+
+
 
 
 def GegenbauersCoeffs(g, n_):
@@ -71,20 +86,23 @@ def GegenbauersCoeffs(g, n_):
 		k-=1
 	return coeffs
 
+def CalculateGegenbauer():
+	gegenbauer_polynomials = np.array([])
+	for i in range(50):
+		gegenbauer_polynomials =  np.append(gegenbauer_polynomials, sympy.polys.polytools.poly(GegenbauerPoly(n, i, x), x))
+		if i%5 == 0:
+			with open('gegenbauer{}.npy'.format(str(i)), 'wb') as f:
+				np.save(f, gegenbauer_polynomials, allow_pickle=True)
 
 
 if __name__ == "__main__":
+	polynomials_arr = []
+	for i in range(100):
+		polynomials_arr = GenerateGegenbauerLinear(polynomials_arr, n ,i ,x)
+		print(i)
 
-	g = 3*a*x**4 + (a-1)*x**3 - 2*a**2*x**2 + a*x - 5
-	coeffs = GegenbauersCoeffs(g, n)
-	pprint.pprint(coeffs)
-
-
-"""
-	print(coefficients)
-	print(poly(coefficients['f_0']*1 + coefficients['f_1']*x + coefficients['f_2']*GegenbauerPoly(n, 2, x) + coefficients['f_3']*GegenbauerPoly(n, 3, x)))
-	print(poly(GegenbauerPoly(2,3,x)))
-"""
+	with open('gegenbauers_polynomials.txt', 'w') as f:
+	    json.dump(polynomials_arr, f)
 
 
 
