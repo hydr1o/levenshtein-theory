@@ -1,12 +1,15 @@
 import sympy
 from sympy import poly, div, degree, plot, Poly, simplify
-from sympy.abc import x,a,n,k
+from sympy.abc import x,n,k
 import json
 import matplotlib.pyplot as plt
 import pprint
 import time
 from functools import wraps
 from time import process_time
+import json
+import numpy as np
+import pickle
 import json
 
 
@@ -29,6 +32,7 @@ def is_integer(num):
 	else:
 		return True
 
+
 def GegenbauerPoly(n,i,t):
 	j = i-1	
 	if i==0:
@@ -43,6 +47,17 @@ def GegenbauerPoly(n,i,t):
 				return ((2*j + n - 2)*t*GegenbauerPoly(n,j,t) - i*GegenbauerPoly(n, j-1, t))/(j + n - 2)
 			else:
 				raise Exception
+
+
+def GegenbauerPolyWikipediaFormula(a,n,x):
+	if n==0:
+		return 1
+	elif n ==1:
+		return x
+	else:
+		return 1/n*(2*x*(n+a-1)*GegenbauerPolyWikipediaFormula(a, n-1, x) - (n+2*a-2)*GegenbauerPolyWikipediaFormula(a, n-2, x))
+
+
 
 def DivideByGegenbauer(f_x, n_):
 	poly_f_x = Poly(f_x, x)
@@ -63,10 +78,9 @@ def GenerateGegenbauerLinear(polynomials_arr ,n, i ,t):
 	if i == 0:
 		polynomials_arr.append(1)
 	elif i == 1:
-		polynomials_arr.append(t)
+		polynomials_arr.append(sympy.poly(t,x))
 	else:
-		polynomials_arr.append(sympy.poly((2*j + n - 2)*t*polynomials_arr[j] - i* polynomials_arr[j-1]/(j + n - 2), x))
-	return polynomials_arr
+		polynomials_arr.append(sympy.poly((2*j + n - 2)*t*polynomials_arr[j] - i* polynomials_arr[j-1]/(j + n - 2),x))
 
 
 
@@ -94,15 +108,10 @@ def CalculateGegenbauer():
 			with open('gegenbauer{}.npy'.format(str(i)), 'wb') as f:
 				np.save(f, gegenbauer_polynomials, allow_pickle=True)
 
-
 if __name__ == "__main__":
-	polynomials_arr = []
-	for i in range(100):
-		polynomials_arr = GenerateGegenbauerLinear(polynomials_arr, n ,i ,x)
-		print(i)
+	print(sympy.simplify(GegenbauerPolyWikipediaFormula(n, 15, 1 ))) #return 1
+	print(sympy.simplify(GegenbauerPoly(n, 15, 1))) #return n**14 + 63*n**13 + 1612*n**12 + 19961*n**11 + 80179*n**10 - 1002068*n**9.......
 
-	with open('gegenbauers_polynomials.txt', 'w') as f:
-	    json.dump(polynomials_arr, f)
 
 
 
