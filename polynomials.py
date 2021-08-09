@@ -1,6 +1,6 @@
 import sympy
 from sympy import poly, div, degree, plot, Poly, simplify
-from sympy.abc import x,n,k
+from sympy.abc import x,n,k,a,y
 import json
 import matplotlib.pyplot as plt
 import pprint
@@ -11,6 +11,8 @@ import json
 import numpy as np
 import pickle
 import json
+import scipy.special
+
 
 
 def is_integer_and_natural(num):
@@ -41,10 +43,10 @@ def GegenbauerPoly(n,i,t):
 		return t
 	else:
 		if type(n) == sympy.core.symbol.Symbol or type(t) == sympy.core.symbol.Symbol:
-			return ((2*j + n - 2)*t*GegenbauerPoly(n,j,t) - i*GegenbauerPoly(n, j-1, t))/(j + n - 2)
+			return ((2*j + n - 2)*t*GegenbauerPoly(n,j,t) - j*GegenbauerPoly(n, j-1, t))/(j + n - 2)
 		else:
 			if is_integer_and_natural(n) and is_integer_and_natural(i):
-				return ((2*j + n - 2)*t*GegenbauerPoly(n,j,t) - i*GegenbauerPoly(n, j-1, t))/(j + n - 2)
+				return ((2*j + n - 2)*t*GegenbauerPoly(n,j,t) - j*GegenbauerPoly(n, j-1, t))/(j + n - 2)
 			else:
 				raise Exception
 
@@ -100,6 +102,17 @@ def GegenbauersCoeffs(g, n_):
 		k-=1
 	return coeffs
 
+def ComputeR_i(n, i):
+	return ((n + 2*i - 2)/i)*scipy.special.binom(n+i-3, i-1)
+
+def CalculateT_k(x, y, k, n):
+	output = 0
+	for i in range(1,k+1):
+		output+=ComputeR_i(n, i)*GegenbauerPoly(n,i,x)*GegenbauerPoly(n,i,y)
+	return output
+
+
+
 def CalculateGegenbauer():
 	gegenbauer_polynomials = np.array([])
 	for i in range(50):
@@ -109,8 +122,7 @@ def CalculateGegenbauer():
 				np.save(f, gegenbauer_polynomials, allow_pickle=True)
 
 if __name__ == "__main__":
-	print(sympy.simplify(GegenbauerPolyWikipediaFormula(n, 15, 1 ))) #return 1
-	print(sympy.simplify(GegenbauerPoly(n, 15, 1))) #return n**14 + 63*n**13 + 1612*n**12 + 19961*n**11 + 80179*n**10 - 1002068*n**9.......
+	print(sympy.poly(CalculateT_k(x,y, 4, 2)))
 
 
 
