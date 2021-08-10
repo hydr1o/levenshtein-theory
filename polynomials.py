@@ -1,6 +1,6 @@
 import sympy
-from sympy import poly, div, degree, plot, Poly, simplify
-from sympy.abc import x,n,k,a,y
+from sympy import poly, div, degree, plot, Poly, simplify, factorial
+from sympy.abc import x,n,k,y,i
 import json
 import matplotlib.pyplot as plt
 import pprint
@@ -12,6 +12,7 @@ import numpy as np
 import pickle
 import json
 import scipy.special
+from sympy import S, imageset, Interval
 
 
 
@@ -75,21 +76,12 @@ def DivideByGegenbauer(f_x, n_):
 	return (quotient, remainder)
 
 
-def GenerateGegenbauerLinear(polynomials_arr ,n, i ,t):
-	j = i-1
-	if i == 0:
-		polynomials_arr.append(1)
-	elif i == 1:
-		polynomials_arr.append(sympy.poly(t,x))
-	else:
-		polynomials_arr.append(sympy.poly((2*j + n - 2)*t*polynomials_arr[j] - i* polynomials_arr[j-1]/(j + n - 2),x))
-
 
 
 
 def GegenbauersCoeffs(g, n_):
 	k = degree(g, gen = x)
-	coeffs = {}
+	coeffs = []
 	current_g = g
 	while k >= 0:
 		if is_integer(current_g) and is_integer(GegenbauerPoly(n_,k,x)):
@@ -98,12 +90,20 @@ def GegenbauersCoeffs(g, n_):
 		else:
 			quotient, remainder = DivideByGegenbauer(current_g, n_)
 		current_g = remainder
-		coeffs['f_{}'.format(str(k))] = quotient
+		coeffs.append(quotient)
 		k-=1
 	return coeffs
 
+def BinomialCoeff(a, b):
+	return factorial(a)/(factorial(b)*factorial(a-b))
+
+
+def ComputeR_i_sympy(n, i):
+	return ((n + 2*i - 2)/i)*sympy.binomial(n+i-3, i-1)
+
 def ComputeR_i(n, i):
-	return ((n + 2*i - 2)/i)*scipy.special.binom(n+i-3, i-1)
+	return ((n + 2*i - 2)/i)*BinomialCoeff(n+i-3, i-1)
+	
 
 def CalculateT_k(x, y, k, n):
 	output = 0
@@ -111,19 +111,36 @@ def CalculateT_k(x, y, k, n):
 		output+=ComputeR_i(n, i)*GegenbauerPoly(n,i,x)*GegenbauerPoly(n,i,y)
 	return output
 
+def LimitSphericalCode(g, n ,s):
+	if not(n>=3 and s>=-1 and s<1):
+		raise Exception('n must be >= 3 and s ∈ [-1; 1)')
+	else:
+		g_interval = imageset(x, g, Interval(-1, s))
+		first_condition = g_interval.end<=0	
+		gegenbauer_coeffs = GegenbauersCoeffs(g, n)
+		second_condition = all(elem >= 0 for elem in gegenbauer_coeffs[1:]) and (gegenbauer_coeffs[0]>0)
+		if first_condition and second_condition:
+			return (sympy.poly(g).subs(1, x))/ gegenbauer_coeffs[0]
+		else:
+			raise Exception('conditions not completed')
 
 
-def CalculateGegenbauer():
-	gegenbauer_polynomials = np.array([])
-	for i in range(50):
-		gegenbauer_polynomials =  np.append(gegenbauer_polynomials, sympy.polys.polytools.poly(GegenbauerPoly(n, i, x), x))
-		if i%5 == 0:
-			with open('gegenbauer{}.npy'.format(str(i)), 'wb') as f:
-				np.save(f, gegenbauer_polynomials, allow_pickle=True)
+def LimitSphericalDesign(g, n , τ):
+	if not(n>=3 and τ>=1 and τ < sympy.poly(g).degree()):
+		raise Exception('n must be >= 3 and τ >= 1')
+	else:
+		g_interval = imageset(x, g, Interval(-1, 1))
+		first_condition = g_interval.start>=0
+		gegenbauer_coeffs = GegenbauersCoeffs(g, n)
+		second_condition = all(elem <= 0 for elem in gegenbauer_coeffs[τ+1:])
+		print(gegenbauer_coeffs[τ+1:])
+		if first_condition and second_condition:
+			return (sympy.poly(g).subs(1, x))/ gegenbauer_coeffs[0]
+		else:
+			raise Exception('conditions not completed')
 
 if __name__ == "__main__":
-	print(sympy.poly(CalculateT_k(x,y, 4, 2)))
-
+	LimitSphericalDesign(x**2 + x - 5, 3, 1)
 
 
 
